@@ -437,11 +437,27 @@ jobs:
             echo "::warning title=Source Warning::您使用的内核编译地址为非官方源，可能导致运行失败或内核异常。"
           fi
 
-      - name: Install Dependencies + APTC
-        uses: Numbersf/cache-apt-pkgs-action@latest 
-        with: 
-          packages: python3 git curl libelf-dev build-essential flex bison libssl-dev libncurses-dev liblz4-tool zlib1g-dev libxml2-utils rsync unzip gawk dos2unix kmod libdw-dev elfutils
-          execute_install_scripts: true
+      - name: Restore APT Cache
+        id: apt-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/apt-cache-debs
+          key: apt-cache-${{ runner.os }}-${{ github.ref_name }}-${{ github.event.inputs.FILE }}-v1
+          restore-keys: |
+            apt-cache-${{ runner.os }}-${{ github.ref_name }}-
+            apt-cache-${{ runner.os }}-
+
+      - name: Install Dependencies
+        run: |
+          mkdir -p ~/apt-cache-debs
+          if [ "${{ steps.apt-cache.outputs.cache-hit }}" != "true" ]; then
+            sudo apt-get update
+          else
+            echo "✅ APT 缓存命中，跳过 apt-get update"
+          fi
+          sudo apt-get install -y --no-install-recommends -o Dir::Cache::Archives="$HOME/apt-cache-debs" python3 git curl libelf-dev build-essential flex bison libssl-dev libncurses-dev liblz4-tool zlib1g-dev libxml2-utils rsync unzip gawk dos2unix kmod libdw-dev elfutils
+          sudo rm -f ~/apt-cache-debs/lock
+          sudo rm -rf ~/apt-cache-debs/partial
 
       - name: Install Ccache-ECS
         run: |
@@ -625,9 +641,6 @@ jobs:
             chmod +x "$path"
           done
 
-          git add -A
-          git commit -m "Custom suffix & removed -dirty"
-
       # 伪官方格式的随机后缀（仅在 SUFFIX 未设置时生效）*
       - name: Custom Kernel Random Suffix if empty
         if: ${{ github.event.inputs.SUFFIX == '' }}
@@ -674,9 +687,6 @@ jobs:
 
             chmod +x "$path"
           done
-
-          git add -A
-          git commit -m "Random suffix & remove -dirty"
 
       - name: Resolve Manager Source
         id: manager
@@ -896,6 +906,12 @@ jobs:
                 fi
               fi
             fi
+          fi
+
+          if [ -f fs/namespace.c.rej ]; then
+            echo "::group::❌ 补丁在 fs/namespace.c 出现 hunk FAILED，点击查看具体信息"
+            cat fs/namespace.c.rej
+            echo "::endgroup::"
           fi
 
       # OGKI转换GKI，无需修改 dtbo 开机
