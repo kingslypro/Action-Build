@@ -40,9 +40,9 @@ Prohibit the promotion of forked repositories with **no modifications**; see [LI
 >
 >>`_？ Android19 (？)`
 >
->>`_？ Android18 (？)`
+>>`_？ Android18 (？)`<strong>
 >
->>`_c Android17 (Cinnamon Bun)`<strong>
+>>`_c Android17 (Cinnamon Bun)`
 >
 >>`_b Android16 (Baklava)`
 >
@@ -63,8 +63,8 @@ Prohibit the promotion of forked repositories with **no modifications**; see [LI
 >|| Average Duration Range|Maximum Duration|
 >|------------------|----------------------|------------|
 >| `Ultra-fast build for all devices` | `1st:17min ~ 36min 2nd:6min ~ 17min` | `40/29min`|
->| `Kernel versions 5.10-5.15 built using official script` | `29min ~ 35min`| `45min`    |
->| `Kernel versions 6.1-6.12 built using official script` | `59min ~ 1h12min`| `1h28min` |
+>| `Kernel versions 5.10-5.15 built using official script` | `20min ~ 35min`| `45min`    |
+>| `Kernel versions 6.1-6.12 built using official script` | `55min ~ 1h12min`| `1h28min` |
 >
 > >Using ccache may slow down the first build; this only applies to ultra-fast builds.
 >
@@ -94,7 +94,17 @@ Prohibit the promotion of forked repositories with **no modifications**; see [LI
 # Changelog
 > Minor updates will be ignored. For more details, please refer to the commit.
  
-- Added path recursion and fully adapted the Rust build logic and `bindgen / Kleaf` dependencies for kernel version `6.12+`; it can now be used normally.  
+- Added `FakeConfig(HideConfig)` to hide the visibility of config options in `proc/config.gz`.  
+```
+Regular config option:
+set_config "CONFIG_IP_NF_TARGET_ECN=y"
+Hidden config option:
+set_hide_config "CONFIG_IP6_NF_NAT=y"
+```  
+ 
+- Added `FakePatch` to improve compatibility between multiple kernel sublevel and `susfs`.  
+ 
+- Added path recursion, providing full support for `Rust` build logic and `bindgen`/`Kleaf` dependency resolution on kernel version `6.12+`.  
  
 - `lz4`now automatically follows upstream upgrades and includes automatic error correction.  
  
@@ -122,6 +132,13 @@ Prohibit the promotion of forked repositories with **no modifications**; see [LI
  
 - Support `Baseband-guard(LSMBBG)`.  
  
+- Support setting branches、custom version identifiers、fallback hash.  
+```
+Set Branch: Divided into manager-layer and built-in-layer. Please modify according to the channel name in the KernelSU repository. Do not modify unless you are a developer. Do not leave it empty or remove it.
+The commit hash referred to here is the built-in-layer.
+Here must be separated by two /(U+002F) and cannot be removed.
+```  
+ 
 - Fully automated retrieval of kernel information and build information.  
  
 - Allow modifying `SUBLEVEL`,Used to fix the issue where the device fails to boot after a system update changes the `SUBLEVEL` but the kernel source has not been updated.  
@@ -142,8 +159,6 @@ When there is a kernel-level update or a significant slowdown caused by changes 
 ```  
  
 - First to support for the kernel version `6.6+` new `setlocalversion` format using `echo`, fixing the issue where custom and randomly-generated pseudo-official suffixes were not applied. Now, this feature is fully supported across all device models and build methods.  
- 
-- Add `TRUSTY_EXISTS` to automatically detect whether the `6.6` kernel has defects in the kernel source code and determine whether `sed` is needed.  
  
 - Fix issues where `ZRAM` is unusable or unable to launch non-system apps.  
  
